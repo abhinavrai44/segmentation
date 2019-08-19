@@ -1,7 +1,7 @@
 from __future__ import division
 
 import sys
-sys.path.append("/media/abhinav/8d21f7ab-e8c6-4e2e-b086-db78b777abf0/abhinav/Desktop/nus_interactive_segmentaion/segmentaion_code")
+sys.path.append("/media/abhinav/8d21f7ab-e8c6-4e2e-b086-db78b777abf0/abhinav/Desktop/nus_interactive_segmentaion/interactive-segmentation")
 
 import six
 import cv2
@@ -14,10 +14,21 @@ from keras.optimizers import Adam, SGD
 from keras.callbacks import ModelCheckpoint, CSVLogger, TerminateOnNaN, TensorBoard
 from generator.generator import data_generator_train, data_generator_val, aggregate_files
 
+def FocalLoss(y_true, y_pred):
+    gamma = 2
+    alpha = 0.5
+    y_pred = tf.maximum(y_pred, 1e-15)
+    log_y_pred = tf.log(y_pred)
+    focal_scale = tf.multiply(tf.pow(tf.subtract(1.0, y_pred), gamma), alpha)
+    focal_loss = tf.multiply(y_true, tf.multiply(focal_scale, log_y_pred))
+    return -tf.reduce_sum(focal_loss, axis=-1)
+
 def compile(model):
     sgd = SGD(lr=0.001, decay=0.0, momentum=0.9, nesterov=True)
     adam = Adam(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=5e-4)
-    model.compile(loss = "categorical_crossentropy", optimizer = adam, metrics = ["accuracy"])
+
+    # model.compile(loss = "categorical_crossentropy", optimizer = adam, metrics = ["accuracy"])
+    model.compile(loss=FocalLoss, optimizer=adam, metrics=["accuracy"])
 
 def train_model(model, input_shape, total_classes, train_orig_images_list, train_seg_images_list, val_orig_images_list, val_seg_images_list):
     compile(model)
