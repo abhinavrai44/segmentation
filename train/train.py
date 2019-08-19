@@ -45,8 +45,16 @@ def train_model(model, input_shape, total_classes, train_orig_images_list, train
     initial_epoch = 0
     final_epoch = 60
 
-    train_generator = data_generator_train(batch_size, input_shape, total_classes, train_orig_images_list, train_seg_images_list)
-    val_generator = data_generator_val(batch_size, input_shape, total_classes, val_orig_images_list, val_seg_images_list)
+    subtract_mean = [123, 117, 104]
+    equalize = False
+    brightness = (0.5, 2, 0.5)
+    flip = 0.3
+    translate = ((0,30), (0,30), 0.2)
+    scale = (0.9, 1.1, 0.2)
+    crop = (0.3, 0.7, 0.2)
+
+    train_generator = data_generator_train(batch_size, input_shape, total_classes, train_orig_images_list, train_seg_images_list, subtract_mean, equalize, brightness, flip, translate, scale, crop)
+    val_generator = data_generator_val(batch_size, input_shape, total_classes, val_orig_images_list, val_seg_images_list, subtract_mean, equalize)
 
     model.fit_generator(train_generator,
                         steps_per_epoch = math.ceil(total_size / batch_size),
