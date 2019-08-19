@@ -41,10 +41,11 @@ if __name__ == '__main__':
 
     input_shape = (256, 256, 3)
     total_classes = 21
-
+    subtract_mean = [123, 117, 104]
+    
     model = FpnNet(image_size = input_shape, n_classes = total_classes)
 
-    weights_file = "/media/abhinav/Abhinav/seg_weights/fpn_epoch-42_loss-0.6146_val_loss-1.1421.h5"
+    weights_file = "/media/abhinav/Abhinav/seg_weights/fpn_epoch-34_loss-1.0681_val_loss-1.2505.h5"
 
     model.load_weights(weights_file, by_name=True, skip_mismatch=True)
 
@@ -52,7 +53,9 @@ if __name__ == '__main__':
         img = cv2.imread(image_file)
         orig_img = img
         img = cv2.resize(img, (input_shape[0], input_shape[1]))
-        img = img_to_array(img) / 127.5 - 1
+
+        img = img.astype(np.int16) - np.array(subtract_mean)
+        # img = img_to_array(img) / 127.5 - 1
 
         pred = model.predict([[img]])
         output = np.argmax(pred[0], axis=2)
