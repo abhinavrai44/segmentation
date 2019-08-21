@@ -13,6 +13,17 @@ from model.fpn import FpnNet
 from keras.optimizers import Adam, SGD
 from keras.callbacks import ModelCheckpoint, CSVLogger, TerminateOnNaN, TensorBoard
 from generator.generator import data_generator_train, data_generator_val, aggregate_files
+import keras.backend as K
+
+
+def mean_iou(y_true, y_pred):
+  num_classes = 21
+  score, update_op = tf.metrics.mean_iou(tf.argmax(y_true, axis=3), tf.argmax(y_pred, axis=3), num_classes)
+  K.get_session().run(tf.local_variables_initializer())
+  # K.get_session().run(tf.global_variables_initializer())
+  with tf.control_dependencies([update_op]):
+    final_score = tf.identity(score)
+  return final_score
 
 def FocalLoss(y_true, y_pred):
     gamma = 2
@@ -51,7 +62,8 @@ def train_model(model, input_shape, total_classes, train_orig_images_list, train
     callbacks_list = [checkpoint, csv_logger, terminate_on_nan, tensorboard]
 
     batch_size = 8
-    total_size = 1500
+    train_size = len(train_orig_images_list)
+    val_size = len(val_orig_images_list)
 
     initial_epoch = 0
     final_epoch = 60
@@ -68,12 +80,12 @@ def train_model(model, input_shape, total_classes, train_orig_images_list, train
     val_generator = data_generator_val(batch_size, input_shape, total_classes, val_orig_images_list, val_seg_images_list, subtract_mean, equalize)
 
     model.fit_generator(train_generator,
-                        steps_per_epoch = math.ceil(total_size / batch_size),
+                        steps_per_epoch = math.ceil(train_size / batch_size),
                         epochs = final_epoch,
                         callbacks = callbacks_list,
                         initial_epoch = initial_epoch,
                         validation_data = val_generator,
-                        validation_steps = batch_size
+                        validation_steps = math.ceil(val_size / batch_size)
                         )
 
 
