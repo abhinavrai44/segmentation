@@ -195,12 +195,13 @@ def data_generator_train(batch_size, input_shape, total_classes, train_orig_imag
 def data_generator_val(batch_size, input_shape, total_classes, val_orig_images_list, val_seg_images_list, subtract_mean = None, equalize = False):
     total_images = len(val_orig_images_list)
 
+    start = 0
     while True:
         x = []
         y = []
 
         for i in range(batch_size):
-            index = random.randint(0, total_images - 1)
+            index = start + i
 
             orig_image = cv2.imread(val_orig_images_list[index], cv2.IMREAD_UNCHANGED)
             seg_image = cv2.imread(val_seg_images_list[index], cv2.IMREAD_UNCHANGED)
@@ -218,6 +219,10 @@ def data_generator_val(batch_size, input_shape, total_classes, val_orig_images_l
 
             x.append(orig_image)
             y.append(seg_image)
+
+        start = start + batch_size
+        if((start + batch_size) > len(val_orig_images_list)):
+            start = 0
 
         x = np.array(x)
         y = np.array(y)
