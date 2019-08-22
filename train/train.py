@@ -15,6 +15,9 @@ from keras.callbacks import ModelCheckpoint, CSVLogger, TerminateOnNaN, TensorBo
 from generator.generator import data_generator_train, data_generator_val, aggregate_files
 import keras.backend as K
 
+config = tf.ConfigProto()
+config.gpu_options.allow_growth=True
+sess = tf.Session(config=config)
 
 def mean_iou(y_true, y_pred):
   num_classes = 21
