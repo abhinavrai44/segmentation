@@ -11,7 +11,7 @@ import numpy as np
 import math
 from model.fpn import FpnNet
 from keras.optimizers import Adam, SGD
-from keras.callbacks import ModelCheckpoint, CSVLogger, TerminateOnNaN, TensorBoard
+from keras.callbacks import ModelCheckpoint, CSVLogger, TerminateOnNaN, TensorBoard, LearningRateScheduler
 from generator.generator import data_generator_train, data_generator_val, aggregate_files
 import keras.backend as K
 
@@ -34,6 +34,14 @@ def FocalLoss(y_true, y_pred):
     focal_loss = tf.multiply(y_true, tf.multiply(focal_scale, log_y_pred))
     return -tf.reduce_sum(focal_loss, axis=-1)
 
+def lr_schedule(epoch):
+    if epoch < 100:
+        return 0.001
+    elif (epoch < 300):
+        return 0.0001
+    else:
+        return 0.00001
+
 def compile(model):
     sgd = SGD(lr=0.001, decay=0.0, momentum=0.9, nesterov=True)
     adam = Adam(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=5e-4)
@@ -48,6 +56,8 @@ def train_model(model, input_shape, total_classes, train_orig_images_list, train
     csv_log_filepath = "/media/abhinav/Abhinav/seg_weights/csv/train.csv"
     tensorboard_filepath = "/media/abhinav/Abhinav/seg_weights/logs/"
 
+    learning_rate_scheduler = LearningRateScheduler(schedule=lr_schedule, verbose=True)
+
     checkpoint = ModelCheckpoint(checkpoint_filepath, verbose=1, save_best_only=True, save_weights_only=True, mode='min')
 
     csv_logger = CSVLogger(filename=csv_log_filepath,
@@ -59,7 +69,7 @@ def train_model(model, input_shape, total_classes, train_orig_images_list, train
     tensorboard = TensorBoard(log_dir=tensorboard_filepath, histogram_freq=0,
                               write_graph=True, write_images=True)
 
-    callbacks_list = [checkpoint, csv_logger, terminate_on_nan, tensorboard]
+    callbacks_list = [learning_rate_scheduler, checkpoint, csv_logger, terminate_on_nan, tensorboard]
 
     batch_size = 8
     train_size = len(train_orig_images_list)
