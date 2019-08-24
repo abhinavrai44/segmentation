@@ -9,10 +9,16 @@ import keras
 import tensorflow as tf
 import numpy as np
 import math
+
+from generator.generator import data_generator_train, data_generator_val, aggregate_files
+
 from model.fpn import FpnNet
+from model.fcn import fcn32,fcn8
+from model.unet import modified_unet, original_unet
+from model.pspnet import pspnet
+
 from keras.optimizers import Adam, SGD
 from keras.callbacks import ModelCheckpoint, CSVLogger, TerminateOnNaN, TensorBoard, LearningRateScheduler
-from generator.generator import data_generator_train, data_generator_val, aggregate_files
 import keras.backend as K
 
 config = tf.ConfigProto()
@@ -74,7 +80,7 @@ def train_model(model, input_shape, total_classes, train_orig_images_list, train
 
     callbacks_list = [learning_rate_scheduler, checkpoint, csv_logger, terminate_on_nan, tensorboard]
 
-    batch_size = 8
+    batch_size = 1
     train_size = len(train_orig_images_list)
     val_size = len(val_orig_images_list)
 
@@ -106,15 +112,20 @@ if __name__ == '__main__':
     train_orig_images_list, train_seg_images_list, val_orig_images_list, val_seg_images_list = aggregate_files()
 
 
-    input_shape = (256, 256, 3)
+    # input_shape = (256, 256, 3)
+    input_shape = (473, 473, 3)
     total_classes = 21
 
-    model = FpnNet(image_size = input_shape, n_classes = total_classes)
+    # model = FpnNet(image_size = input_shape, n_classes = total_classes)
+    # model = fcn32(image_shape = input_shape, num_classes = total_classes, backbone = "vgg16")
+    # model = fcn8(image_shape = input_shape, num_classes = total_classes, backbone = "vgg16")
+    # model = modified_unet(image_shape = input_shape, num_classes = total_classes, backbone = "resnet50")
+    # model = original_unet(image_shape = input_shape, num_classes = total_classes)
+    model = pspnet(image_shape = input_shape, num_classes = total_classes, backbone = "resnet50")
 
-    weights_file = "/media/abhinav/8d21f7ab-e8c6-4e2e-b086-db78b777abf0/abhinav/Desktop/nus_interactive_segmentaion/segmentaion_code/weights/Resnet50.h5"
+    weights_file = "/media/abhinav/Abhinav/weights/Resnet50.h5"
+    # weights_file = "/media/abhinav/Abhinav/weights/VGG_ILSVRC_16_layers_fc_reduced.h5"
+    # weights_file = "/media/abhinav/Abhinav/weights/ResNet-101-model.keras.h5"
 
     model.load_weights(weights_file, by_name=True, skip_mismatch=True)
     train_model(model, input_shape, total_classes, train_orig_images_list, train_seg_images_list, val_orig_images_list, val_seg_images_list)
-
-
-
