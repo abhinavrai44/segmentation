@@ -121,7 +121,7 @@ def Resnet50(image_input, dilation_rate=1, multigrid=[1, 1, 1], bn_axis=3, l2_re
     print("conv4_6 Shape : ", conv4_6.shape)
 
     # CONV5_x
-    conv5_1 = conv_block(conv4_4, 3, [512, 512, 2048], dilation_rate=1, multigrid=multigrid, stage=5, block='a',
+    conv5_1 = conv_block(conv4_6, 3, [512, 512, 2048], dilation_rate=1, multigrid=multigrid, stage=5, block='a',
                          strides=(2, 2), l2_regularization=l2_regularization, bn_axis=bn_axis)
     conv5_2 = identity_block(conv5_1, 3, [512, 512, 2048], dilation_rate=1, multigrid=multigrid, stage=5, block='b',
                              l2_regularization=l2_regularization, bn_axis=bn_axis)
