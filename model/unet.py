@@ -59,9 +59,11 @@ def modified_unet(image_shape, num_classes, backbone = "vgg16"):
     P1 = Conv2D(64 , (3, 3), activation='relu', padding='same')(P1)
     P1 = BatchNormalization()(P1)
 
-    out = Conv2D(num_classes, (3, 3), activation='relu', padding='same')(P1)
+    P1 = UpSampling2D((2, 2))(P1)
+    P1 = Conv2D(64 , (3, 3), activation='relu', padding='same')(P1)
+    P1 = BatchNormalization()(P1)
+    out = Conv2D(num_classes, (3, 3), padding='same')(P1)
     out = Activation('softmax')(out)
-    out = UpSampling2D((2, 2))(out)
 
     # print ("Output : ", out.shape)
     
