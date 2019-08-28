@@ -4,7 +4,7 @@ from keras.layers import Input, ZeroPadding2D, Conv2D, BatchNormalization, Activ
 from keras.regularizers import l2
 from keras.models import Model
 
-def conv_block(conv_block_input, kernel_size, filters, stage, block, strides=(2, 2), l2_regularization=0.0005, bn_axis=3):
+def conv_block(conv_block_input, kernel_size, filters, stage, block, strides=(2, 2), dilation_rate = 1, l2_regularization=0.0005, bn_axis=3):
     conv_name = 'res' + str(stage) + block + '_branch'
     bn_name = 'bn' + str(stage) + block + '_branch'
     filter_count_1, filter_count_2, filter_count_3 = filters
@@ -14,7 +14,7 @@ def conv_block(conv_block_input, kernel_size, filters, stage, block, strides=(2,
     x = BatchNormalization(axis=bn_axis, name=bn_name + '2a')(x)
     x = Activation('relu')(x)
 
-    x = Conv2D(filter_count_2, (kernel_size, kernel_size), padding='same', kernel_initializer='he_normal', kernel_regularizer=l2(l2_regularization), name=conv_name + '2b', use_bias=True)(x)
+    x = Conv2D(filter_count_2, (kernel_size, kernel_size), padding='same', kernel_initializer='he_normal', dilation_rate=dilation_rate, kernel_regularizer=l2(l2_regularization), name=conv_name + '2b', use_bias=True)(x)
     x = BatchNormalization(axis=bn_axis, name=bn_name + '2b')(x)
     x = Activation('relu')(x)
 
@@ -31,7 +31,7 @@ def conv_block(conv_block_input, kernel_size, filters, stage, block, strides=(2,
     return x
 
 
-def identity_block(conv_block_input, kernel_size, filters, stage, block, l2_regularization=0.0005, bn_axis=3):
+def identity_block(conv_block_input, kernel_size, filters, stage, block, dilation_rate = 1, l2_regularization=0.0005, bn_axis=3):
     conv_name = 'res' + str(stage) + block + '_branch'
     bn_name = 'bn' + str(stage) + block + '_branch'
     filter_count_1, filter_count_2, filter_count_3 = filters
@@ -40,7 +40,7 @@ def identity_block(conv_block_input, kernel_size, filters, stage, block, l2_regu
     x = BatchNormalization(axis=bn_axis, name=bn_name + '2a')(x)
     x = Activation('relu')(x)
 
-    x = Conv2D(filter_count_2, (kernel_size, kernel_size), padding='same', kernel_initializer='he_normal', kernel_regularizer=l2(l2_regularization), name=conv_name + '2b', use_bias=True)(x)
+    x = Conv2D(filter_count_2, (kernel_size, kernel_size), padding='same', kernel_initializer='he_normal', dilation_rate=dilation_rate, kernel_regularizer=l2(l2_regularization), name=conv_name + '2b', use_bias=True)(x)
     x = BatchNormalization(axis=bn_axis, name=bn_name + '2b')(x)
     x = Activation('relu')(x)
 
@@ -53,7 +53,7 @@ def identity_block(conv_block_input, kernel_size, filters, stage, block, l2_regu
 
     return x
 
-def resnet_encoder(image_shape, number_layers = 50):
+def resnet_encoder(image_shape, number_layers = 50, dilated_resnet = False):
 
     image_input = Input(shape=image_shape)
 
@@ -92,34 +92,63 @@ def resnet_encoder(image_shape, number_layers = 50):
     print("conv3_4 Shape : ", conv3_4.shape)
 
     # CONV4_x
-    conv4_1 = conv_block(conv3_4, 3, [256, 256, 1024], stage=4, block='a',
-                         strides=(2, 2), l2_regularization=l2_regularization, bn_axis=bn_axis)
-    if(number_layers == 101):
-        for i in range(1,23):
-            x = identity_block(conv4_1, 3, [256, 256, 1024], stage=4, block='b'+str(i), l2_regularization=l2_regularization,
+    if(dilated_resnet == False):
+        conv4_1 = conv_block(conv3_4, 3, [256, 256, 1024], stage=4, block='a',
+                             strides=(2, 2), l2_regularization=l2_regularization, bn_axis=bn_axis)
+        if(number_layers == 101):
+            for i in range(1,23):
+                x = identity_block(conv4_1, 3, [256, 256, 1024], stage=4, block='b'+str(i), l2_regularization=l2_regularization,
+                                     bn_axis=bn_axis)
+            conv4_final = x
+        else:
+            conv4_2 = identity_block(conv4_1, 3, [256, 256, 1024], stage=4, block='b', l2_regularization=l2_regularization,
+                                     bn_axis=bn_axis)
+            conv4_3 = identity_block(conv4_2, 3, [256, 256, 1024], stage=4, block='c', l2_regularization=l2_regularization,
+                                     bn_axis=bn_axis)
+            conv4_4 = identity_block(conv4_3, 3, [256, 256, 1024], stage=4, block='d', l2_regularization=l2_regularization,
+                                     bn_axis=bn_axis)
+            conv4_5 = identity_block(conv4_4, 3, [256, 256, 1024], stage=4, block='e', l2_regularization=l2_regularization,
+                                     bn_axis=bn_axis)
+            conv4_6 = identity_block(conv4_5, 3, [256, 256, 1024], stage=4, block='f', l2_regularization=l2_regularization,
                                  bn_axis=bn_axis)
-        conv4_final = x
+            conv4_final = conv4_6
     else:
-        conv4_2 = identity_block(conv4_1, 3, [256, 256, 1024], stage=4, block='b', l2_regularization=l2_regularization,
+        conv4_1 = conv_block(conv3_4, 3, [256, 256, 1024], stage=4, block='a',
+                             strides=(1, 1), dilation_rate=2, l2_regularization=l2_regularization, bn_axis=bn_axis)
+        if(number_layers == 101):
+            for i in range(1,23):
+                x = identity_block(conv4_1, 3, [256, 256, 1024], stage=4, block='b'+str(i), dilation_rate=2, l2_regularization=l2_regularization,
+                                     bn_axis=bn_axis)
+            conv4_final = x
+        else:
+            conv4_2 = identity_block(conv4_1, 3, [256, 256, 1024], stage=4, block='b', dilation_rate=2, l2_regularization=l2_regularization,
+                                     bn_axis=bn_axis)
+            conv4_3 = identity_block(conv4_2, 3, [256, 256, 1024], stage=4, block='c', dilation_rate=2, l2_regularization=l2_regularization,
+                                     bn_axis=bn_axis)
+            conv4_4 = identity_block(conv4_3, 3, [256, 256, 1024], stage=4, block='d', dilation_rate=2, l2_regularization=l2_regularization,
+                                     bn_axis=bn_axis)
+            conv4_5 = identity_block(conv4_4, 3, [256, 256, 1024], stage=4, block='e', dilation_rate=2, l2_regularization=l2_regularization,
+                                     bn_axis=bn_axis)
+            conv4_6 = identity_block(conv4_5, 3, [256, 256, 1024], stage=4, block='f', dilation_rate=2, l2_regularization=l2_regularization,
                                  bn_axis=bn_axis)
-        conv4_3 = identity_block(conv4_2, 3, [256, 256, 1024], stage=4, block='c', l2_regularization=l2_regularization,
-                                 bn_axis=bn_axis)
-        conv4_4 = identity_block(conv4_3, 3, [256, 256, 1024], stage=4, block='d', l2_regularization=l2_regularization,
-                                 bn_axis=bn_axis)
-        conv4_5 = identity_block(conv4_4, 3, [256, 256, 1024], stage=4, block='e', l2_regularization=l2_regularization,
-                                 bn_axis=bn_axis)
-        conv4_6 = identity_block(conv4_5, 3, [256, 256, 1024], stage=4, block='f', l2_regularization=l2_regularization,
-                             bn_axis=bn_axis)
-        conv4_final = conv4_6
+            conv4_final = conv4_6
     print("conv4_final Shape : ", conv4_final.shape)
 
     # CONV5_x
-    conv5_1 = conv_block(conv4_final, 3, [512, 512, 2048], stage=5, block='a',
-                         strides=(2, 2), l2_regularization=l2_regularization, bn_axis=bn_axis)
-    conv5_2 = identity_block(conv5_1, 3, [512, 512, 2048], stage=5, block='b',
-                             l2_regularization=l2_regularization, bn_axis=bn_axis)
-    conv5_3 = identity_block(conv5_2, 3, [512, 512, 2048], stage=5, block='c',
-                             l2_regularization=l2_regularization, bn_axis=bn_axis)
+    if(dilated_resnet == False):
+        conv5_1 = conv_block(conv4_final, 3, [512, 512, 2048], stage=5, block='a',
+                             strides=(2, 2), l2_regularization=l2_regularization, bn_axis=bn_axis)
+        conv5_2 = identity_block(conv5_1, 3, [512, 512, 2048], stage=5, block='b',
+                                 l2_regularization=l2_regularization, bn_axis=bn_axis)
+        conv5_3 = identity_block(conv5_2, 3, [512, 512, 2048], stage=5, block='c',
+                                 l2_regularization=l2_regularization, bn_axis=bn_axis)
+    else:
+        conv5_1 = conv_block(conv4_final, 3, [512, 512, 2048], stage=5, block='a',
+                             strides=(1, 1), dilation_rate=2, l2_regularization=l2_regularization, bn_axis=bn_axis)
+        conv5_2 = identity_block(conv5_1, 3, [512, 512, 2048], stage=5, block='b', dilation_rate=2, 
+                                 l2_regularization=l2_regularization, bn_axis=bn_axis)
+        conv5_3 = identity_block(conv5_2, 3, [512, 512, 2048], stage=5, block='c', dilation_rate=2,
+                                 l2_regularization=l2_regularization, bn_axis=bn_axis)
     print("conv5_3 Shape : ", conv5_3.shape)
 
     return image_input, conv_1_1, conv2_3, conv3_4, conv4_final, conv5_3
