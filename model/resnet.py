@@ -67,9 +67,9 @@ def resnet_encoder(image_shape, number_layers = 50, dilated_resnet = False):
     conv_1 = BatchNormalization(name='norm_1')(conv_1)
     conv_1 = Activation('relu', name='relu_conv1')(conv_1)
     conv_1_1 = conv_1
-    print("Conv_1 Shape : ", conv_1.shape)
+    print("Conv_1 Shape : ", conv_1_1.shape)
     conv_1 = MaxPooling2D(pool_size=(3, 3), strides=(2, 2), padding='same', name='pool_1')(conv_1)
-    print("Maxpool Shape : ", conv_1.shape)
+    # print("Maxpool Shape : ", conv_1.shape)
 
     # CONV2_x
     conv2_1 = conv_block(conv_1, 3, [64, 64, 256], stage=2, block='a', strides=(1, 1),
