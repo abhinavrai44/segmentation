@@ -6,6 +6,7 @@ from keras.models import Model
 
 from model.vgg16 import vgg16_encoder
 from model.resnet import resnet_encoder
+from model.mobilenet import mobilenet_encoder
 
 # Todo Resnet101 weight load skips layers
 
@@ -19,6 +20,9 @@ def modified_unet(image_shape, num_classes, backbone = "vgg16"):
     if(backbone == "resnet101"):
         image_input, f1, f2, f3, f4, f5 = resnet_encoder(image_shape = image_shape, number_layers = 101)
         resnet_multiplier = 2
+    if(backbone == "mobilenet"):
+        image_input, f1, f2, f3, f4, f5 = mobilenet_encoder(image_shape = image_shape)
+        resnet_multiplier = 1
 
     P4 = f4
 
