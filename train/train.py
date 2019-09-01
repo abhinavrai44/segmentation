@@ -12,8 +12,8 @@ import math
 
 from generator.generator import data_generator_train, data_generator_val, aggregate_files
 
-from model.fpn import FpnNet
-from model.fcn import fcn32,fcn8
+from model.fpn import fpn
+from model.fcn import fcn32, fcn8
 from model.unet import modified_unet, original_unet
 from model.pspnet import pspnet
 
@@ -55,8 +55,8 @@ def compile(model):
     sgd = SGD(lr=0.001, decay=0.0, momentum=0.9, nesterov=True)
     adam = Adam(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=5e-4)
 
-    # model.compile(loss = "categorical_crossentropy", optimizer = adam, metrics = ["accuracy"])
-    model.compile(loss=FocalLoss, optimizer=adam, metrics=["accuracy"])
+    model.compile(loss = "categorical_crossentropy", optimizer = adam, metrics = ["accuracy"])
+    # model.compile(loss=FocalLoss, optimizer=adam, metrics=["accuracy"])
 
 def train_model(model, input_shape, total_classes, train_orig_images_list, train_seg_images_list, val_orig_images_list, val_seg_images_list):
     compile(model)
@@ -80,7 +80,7 @@ def train_model(model, input_shape, total_classes, train_orig_images_list, train
 
     callbacks_list = [learning_rate_scheduler, checkpoint, csv_logger, terminate_on_nan, tensorboard]
 
-    batch_size = 1
+    batch_size = 4
     train_size = len(train_orig_images_list)
     val_size = len(val_orig_images_list)
 
@@ -113,17 +113,18 @@ if __name__ == '__main__':
 
 
     # input_shape = (256, 256, 3)
-    input_shape = (473, 473, 3)
+    input_shape = (512, 512, 3)
     total_classes = 21
 
-    # model = FpnNet(image_size = input_shape, n_classes = total_classes)
     # model = fcn32(image_shape = input_shape, num_classes = total_classes, backbone = "vgg16")
     # model = fcn8(image_shape = input_shape, num_classes = total_classes, backbone = "vgg16")
-    # model = modified_unet(image_shape = input_shape, num_classes = total_classes, backbone = "resnet50")
+    # model = modified_unet(image_shape = input_shape, num_classes = total_classes, backbone = "mobilenet")
     # model = original_unet(image_shape = input_shape, num_classes = total_classes)
-    model = pspnet(image_shape = input_shape, num_classes = total_classes, backbone = "resnet50")
+    # model = pspnet(image_shape = input_shape, num_classes = total_classes, backbone = "resnet50")
+    model = fpn(image_shape = input_shape, num_classes = total_classes, backbone = "resnet50")
 
     weights_file = "/media/abhinav/Abhinav/weights/Resnet50.h5"
+    # weights_file = "/media/abhinav/Abhinav/weights/mobilenet_1_0_224_tf.h5"
     # weights_file = "/media/abhinav/Abhinav/weights/VGG_ILSVRC_16_layers_fc_reduced.h5"
     # weights_file = "/media/abhinav/Abhinav/weights/ResNet-101-model.keras.h5"
 
